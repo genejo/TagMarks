@@ -1,0 +1,523 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TagMarks.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        xmlns:bh="using:TagMarks.Desktop.Behaviors"
+        xmlns:conv="using:TagMarks.Desktop.Converters"
+        xmlns:svc="using:TagMarks.Desktop.Services"
+        xmlns:models="using:Cauldron.Models"
+        mc:Ignorable="d" d:DesignWidth="801" d:DesignHeight="450"
+        x:Class="TagMarks.Desktop.Views.MainWindowView"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="TagMark"
+        WindowDecorations="None"
+        ExtendClientAreaToDecorationsHint="True"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Width="550"
+        Height="400">
+
+    <Border Name="BrdChrome"
+            CornerRadius="12"
+            ClipToBounds="True"
+            BoxShadow="0 8 32 0 #40000000"
+            Margin="0">
+        <Border.Background>
+            <SolidColorBrush Color="{DynamicResource SystemChromeMediumLowColor}" />
+        </Border.Background>
+    <DockPanel Margin="12">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <TextBlock Text="{Binding ModeIcon}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       DockPanel.Dock="Left" />
+            <TextBox Name="TxtFilter"
+                     Text="{Binding TagMarkFilter, Mode=TwoWay}"
+                     PlaceholderText="Type to filter..."
+                     MaxLength="255"
+                     IsEnabled="{Binding !IsInRenameMode}"
+                     BorderBrush="{Binding CurrentMode, Converter={x:Static conv:AppModeToBrushConverter.Instance}}"
+                     BorderThickness="2" />
+        </DockPanel>
+
+        <TextBlock Name="TbCount"
+                   DockPanel.Dock="Top"
+                   Text="{Binding FilterCountDisplay}"
+                   Margin="0,0,0,4"
+                   FontSize="11"
+                   Opacity="0.5" />
+
+        <Border Name="BrdToast"
+                DockPanel.Dock="Bottom"
+                IsVisible="{Binding Notifications.IsToastVisible}"
+                Background="#E0333333"
+                CornerRadius="4"
+                Padding="10,6"
+                Margin="0,0,0,0"
+                HorizontalAlignment="Stretch">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right"
+                           Margin="8,0,0,0"
+                           Foreground="#AAAAAA"
+                           FontSize="12"
+                           VerticalAlignment="Center">
+                    <Run Text="{Binding Notifications.ToastActionHint}" />
+                    <Run Text=" (" /><Run Text="{Binding Notifications.ToastCountdown}" /><Run Text="s)" />
+                </TextBlock>
+                <TextBlock Text="{Binding Notifications.ToastMessage}"
+                           Foreground="White"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Bottom"
+                   Margin="0,4,0,0"
+                   Text="{Binding PayloadLabel}"
+                   IsVisible="{Binding PayloadLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Opacity="0.5"
+                   TextTrimming="CharacterEllipsis" />
+
+        <Panel>
+            <Border Name="BrdTooltip"
+                    IsVisible="{Binding Notifications.IsTooltipVisible}"
+                    Background="#FF333333"
+                    CornerRadius="4"
+                    Padding="8,4"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    ZIndex="1"
+                    Margin="0,-20,0,0">
+                <TextBlock Text="{Binding Notifications.TooltipMessage}"
+                           Foreground="White"
+                           FontSize="12" />
+            </Border>
+
+            <TextBox Name="TxtRename"
+                     IsVisible="{Binding IsInRenameMode}"
+                     Text="{Binding RenameText, Mode=TwoWay}"
+                     MaxLength="255"
+                     BorderBrush="{Binding CurrentMode, Converter={x:Static conv:AppModeToBrushConverter.Instance}}"
+                     BorderThickness="2"
+                     ZIndex="2"
+                     HorizontalAlignment="Stretch"
+                     VerticalAlignment="Top" />
+
+            <ListBox Name="LbFilteredTagMarks"
+                     ItemsSource="{Binding FilteredTagMarks}"
+                     SelectedIndex="{Binding SelectedTagMarkIndex, Mode=TwoWay}"
+                     HorizontalAlignment="Stretch"
+                     IsVisible="{Binding !IsInAddMode}">
+                <ListBox.ContextMenu>
+                    <ContextMenu Name="TagMarkContextMenu">
+                        <ContextMenu.Styles>
+                            <Style Selector="TextBlock.shortcutHint">
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter Property="Margin" Value="20,0,0,0" />
+                            </Style>
+                        </ContextMenu.Styles>
+                        <!-- Activate row: label adapts to tagmark type -->
+                        <MenuItem Command="{Binding LaunchTagMarkCommand}"
+                                  CommandParameter="{Binding SelectedTagMark}"
+                                  IsVisible="{Binding IsSelectedTagMarkUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Open" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Activate}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Command="{Binding LaunchTagMarkCommand}"
+                                  CommandParameter="{Binding SelectedTagMark}"
+                                  IsVisible="{Binding !IsSelectedTagMarkUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Copy Clip" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Activate}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <!-- Copy row: label adapts to tagmark type -->
+                        <MenuItem Command="{Binding CopyTagMarkUriCommand}"
+                                  IsVisible="{Binding IsSelectedTagMarkUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Copy URI" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Copy}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Command="{Binding CopyTagMarkUriCommand}"
+                                  IsVisible="{Binding !IsSelectedTagMarkUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Copy Clip Text" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Copy}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Command="{Binding EnterRenameModeCommand}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Rename" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Rename}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Command="{Binding ChangePayloadCommand}"
+                                  IsEnabled="{Binding CanChangePayload}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Change Payload" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.ChangePayload}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <!-- Switch row: label and enabled state adapt -->
+                        <MenuItem Command="{Binding SwitchTypeCommand}"
+                                  IsVisible="{Binding IsSelectedTagMarkUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Switch to Clip" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.SwitchType}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Command="{Binding SwitchTypeCommand}"
+                                  IsVisible="{Binding !IsSelectedTagMarkUri}"
+                                  IsEnabled="{Binding CanSwitchSelectedToUri}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Switch to URI" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.SwitchType}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Command="{Binding AddLinkCommand}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Add Link" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.AddLink}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Command="{Binding DeleteTagMarkCommand}"
+                                  CommandParameter="{Binding SelectedTagMark}">
+                            <MenuItem.Header>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Delete" />
+                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Delete}" />
+                                </Grid>
+                            </MenuItem.Header>
+                        </MenuItem>
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="2" />
+                    </Style>
+                    <Style Selector="ListBoxItem ListBox.expandedContent">
+                        <Setter Property="IsVisible" Value="False" />
+                    </Style>
+                    <Style Selector="ListBoxItem:selected ListBox.expandedContent">
+                        <Setter Property="IsVisible" Value="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).IsExpanded}" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="sys:String">
+                        <StackPanel Spacing="4">
+                            <!-- DockPanel, not a horizontal StackPanel: the name needs a bounded width to be trimmed -->
+                            <DockPanel>
+                                <Panel Width="12" Margin="0,0,6,0" DockPanel.Dock="Left">
+                                    <TextBlock Text="►"
+                                               FontSize="9"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static conv:ExpandableMarkerConverter.Instance}">
+                                                <Binding Path="." />
+                                                <Binding Path="#LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.ExpandableTagMarks" />
+                                                <Binding Path="#LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.TagMark" />
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+                                    <TextBlock Text="▼"
+                                               FontSize="9"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static conv:ExpandedItemConverter.Instance}">
+                                                <Binding Path="." />
+                                                <Binding Path="#LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.TagMark" />
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+                                </Panel>
+                                <!-- Duplicate primary URI owned by another tagmark (spec §11 #50) -->
+                                <TextBlock Text="⚠"
+                                           DockPanel.Dock="Right"
+                                           FontSize="11"
+                                           Opacity="0.6"
+                                           Margin="6,0,2,0"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.IsVisible>
+                                        <MultiBinding Converter="{x:Static conv:DuplicateUriMarkerConverter.Instance}">
+                                            <Binding Path="." />
+                                            <Binding Path="#LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).DuplicateUriOwners" />
+                                        </MultiBinding>
+                                    </TextBlock.IsVisible>
+                                    <ToolTip.Tip>
+                                        <MultiBinding Converter="{x:Static conv:DuplicateUriToolTipConverter.Instance}">
+                                            <Binding Path="." />
+                                            <Binding Path="#LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).DuplicateUriOwners" />
+                                        </MultiBinding>
+                                    </ToolTip.Tip>
+                                </TextBlock>
+                                <TextBlock bh:HighlightBehavior.Text="{Binding}"
+                                           bh:HighlightBehavior.HighlightTerms="{Binding #TxtFilter.Text}"
+                                           bh:HighlightBehavior.HighlightBrush="Coral"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding}"
+                                           bh:TrimmedToolTipBehavior.IsEnabled="True" />
+                            </DockPanel>
+
+                            <ListBox Classes="expandedContent expandedEntriesList"
+                                     ItemsSource="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.Entries}"
+                                     SelectedIndex="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.SelectedIndex, Mode=TwoWay}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Margin="18,2,0,0"
+                                     Padding="0"
+                                     MaxHeight="160"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <ContextMenu.Styles>
+                                            <Style Selector="TextBlock.shortcutHint">
+                                                <Setter Property="Opacity" Value="0.5" />
+                                                <Setter Property="Margin" Value="20,0,0,0" />
+                                            </Style>
+                                        </ContextMenu.Styles>
+                                        <MenuItem Command="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).LaunchExpandedEntryCommand}">
+                                            <MenuItem.Header>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Text="Open" />
+                                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Activate}" />
+                                                </Grid>
+                                            </MenuItem.Header>
+                                        </MenuItem>
+                                        <MenuItem Command="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).CopyExpandedEntryUriCommand}">
+                                            <MenuItem.Header>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Text="Copy URI" />
+                                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.Copy}" />
+                                                </Grid>
+                                            </MenuItem.Header>
+                                        </MenuItem>
+                                        <MenuItem Command="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).NavigateExpandedLinkCommand}"
+                                                  IsVisible="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.CanNavigateLink}">
+                                            <MenuItem.Header>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Text="Navigate to TagMark" />
+                                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.NavigateLink}" />
+                                                </Grid>
+                                            </MenuItem.Header>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Command="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).DeleteExpandedEntryCommand}"
+                                                  IsVisible="{Binding #LbFilteredTagMarks.((vm:MainWindowViewModel)DataContext).Expanded.IsEntryPrimary, Converter={x:Static BoolConverters.Not}}">
+                                            <MenuItem.Header>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Text="Delete" />
+                                                    <TextBlock Grid.Column="1" Classes="shortcutHint" Text="{x:Static svc:ContextMenuShortcuts.DeleteEntry}" />
+                                                </Grid>
+                                            </MenuItem.Header>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                                <ListBox.Styles>
+                                    <Style Selector="ListBoxItem">
+                                        <Setter Property="Padding" Value="2,1" />
+                                    </Style>
+                                    <Style Selector="ListBoxItem TextBlock.entryMarker">
+                                        <Setter Property="Opacity" Value="0" />
+                                    </Style>
+                                    <Style Selector="ListBoxItem:selected TextBlock.entryMarker">
+                                        <Setter Property="Opacity" Value="1" />
+                                    </Style>
+                                </ListBox.Styles>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ExpandedEntry">
+                                        <TextBlock Text="{Binding DisplayText}"
+                                                   FontSize="12"
+                                                   Opacity="{Binding IsPrimary, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{Binding DisplayText}"
+                                                   bh:TrimmedToolTipBehavior.IsEnabled="True" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock Name="TbEmptyState"
+                       Text="{Binding EmptyStateText}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       Opacity="0.5"
+                       IsVisible="{Binding ShowEmptyState}" />
+
+            <!-- ADD mode confirmation panel -->
+            <Border IsVisible="{Binding IsInAddMode}"
+                    BorderBrush="#555555"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="20"
+                    Margin="8"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Creating new tagmark:"
+                               FontSize="14"
+                               Opacity="0.7" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Name:"
+                                   Opacity="0.6"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding TagMarkFilter}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Name="TbAddTypeIcon"
+                                   Text="{Binding CapturedPayloadTypeIcon}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CapturedPayloadPreview}"
+                                   Opacity="0.6"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="[Enter] Create   [Esc] Cancel"
+                               Opacity="0.4"
+                               FontSize="11"
+                               Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- CONFIRM_PANEL (Ctrl+K add link / Ctrl+Shift+K change payload) -->
+            <Border Name="BrdConfirmPanelOverlay"
+                    IsVisible="{Binding IsConfirmPanelVisible}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ZIndex="3"
+                    Focusable="True">
+                <Border.Background>
+                    <SolidColorBrush Color="{DynamicResource SystemChromeMediumLowColor}" />
+                </Border.Background>
+                <Border Name="BrdConfirmPanel"
+                        BorderBrush="#555555"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="20"
+                        Margin="8"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding ConfirmPanel.Message}"
+                                   FontSize="14"
+                                   Opacity="0.7" />
+                        <TextBlock Text="{Binding ConfirmPanel.CurrentLine}"
+                                   IsVisible="{Binding ConfirmPanel.CurrentLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                    IsVisible="{Binding ConfirmPanel.Uri, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="URI:"
+                                       Opacity="0.6"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ConfirmPanel.Uri}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding ConfirmPanel.NewLine}"
+                                   IsVisible="{Binding ConfirmPanel.NewLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="(from clipboard)"
+                                   Opacity="0.4"
+                                   FontSize="11" />
+                        <TextBlock Text="{Binding ConfirmPanel.ActionLabel}"
+                                   Opacity="0.4"
+                                   FontSize="11"
+                                   Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </Border>
+
+            <!-- HELP_PANEL (F1 / ? / tray "Keyboard Shortcuts"): shortcut reference grouped by mode, spec §9 -->
+            <Border Name="BrdHelpPanelOverlay"
+                    IsVisible="{Binding IsHelpPanelVisible}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    ZIndex="3"
+                    Focusable="True">
+                <Border.Background>
+                    <SolidColorBrush Color="{DynamicResource SystemChromeMediumLowColor}" />
+                </Border.Background>
+                <Border BorderBrush="#555555"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="8">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="[↑↓] Scroll   [Esc] Close"
+                                   Opacity="0.4"
+                                   FontSize="11"
+                                   Margin="0,8,0,0" />
+                        <ScrollViewer Name="SvHelpPanel"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding HelpSections}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="svc:ShortcutSection">
+                                        <StackPanel Margin="0,0,0,10">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontWeight="SemiBold"
+                                                       Opacity="0.7"
+                                                       Margin="0,0,0,4" />
+                                            <ItemsControl ItemsSource="{Binding Shortcuts}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="svc:Shortcut">
+                                                        <Grid ColumnDefinitions="130,*">
+                                                            <TextBlock Text="{Binding Gesture}"
+                                                                       FontSize="12"
+                                                                       Opacity="0.6" />
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding Description}"
+                                                                       FontSize="12"
+                                                                       TextWrapping="Wrap" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Border>
+        </Panel>
+    </DockPanel>
+    </Border>
+</Window>

@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <LangVersion>14</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+        <PackageReference Include="DynamicData" Version="9.4.33" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.3" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.3" />
+        <!-- The ".Reactive" package family is ReactiveUI compiled against System.Reactive's Unit,
+             which the app (and DynamicData) use directly. Don't mix it with the plain ReactiveUI packages. -->
+        <PackageReference Include="ReactiveUI.Reactive" Version="26.0.1" />
+        <PackageReference Include="ReactiveUI.Avalonia.Reactive" Version="12.1.6" />
+        <PackageReference Include="ReactiveUI.SourceGenerators" Version="4.2.0" PrivateAssets="all" />
+        <PackageReference Include="SharpHook" Version="7.1.1" />
+        <PackageReference Include="SharpHook.Reactive" Version="7.1.1" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <None Update="Assets\**">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <Content Include="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Cauldron\Cauldron.csproj" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Folder Include="Services\" />
+    </ItemGroup>
+</Project>
